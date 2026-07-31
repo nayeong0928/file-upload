@@ -13,7 +13,7 @@ RUN mvn -B clean package -DskipTests
 FROM eclipse-temurin:21-jre AS runtime
 WORKDIR /app
 
-RUN useradd --system --uid 1000 --create-home appuser
+RUN useradd --system --create-home appuser
 COPY --from=build /app/target/*.jar app.jar
 RUN mkdir -p /app/uploads-data && chown -R appuser:appuser /app
 
