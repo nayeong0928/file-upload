@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>파일 업로드</title>
+    <style>
+        body {
+            font-family: -apple-system, "Segoe UI", Malgun Gothic, sans-serif;
+            max-width: 560px;
+            margin: 40px auto;
+            padding: 0 20px;
+            color: #1f2328;
+        }
+        h1 {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        .subtitle {
+            color: #6b7280;
+            font-size: 13px;
+            margin-bottom: 32px;
+        }
+        .upload-box {
+            display: flex;
+            gap: 8px;
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .upload-box input[type="file"] {
+            flex: 1;
+            font-size: 13px;
+        }
+        .upload-box button {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 6px;
+            background: #1f6feb;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .upload-box button:hover {
+            background: #1a5cd1;
+        }
+        .upload-box button:disabled {
+            background: #9ca3af;
+            cursor: default;
+        }
+        #result {
+            margin-top: 16px;
+            font-size: 13px;
+            min-height: 18px;
+        }
+        #result.error {
+            color: #d1242f;
+        }
+        #result.success {
+            color: #1a7f37;
+        }
+    </style>
+</head>
+<body>
+    <h1>파일 업로드</h1>
+    <p class="subtitle">파일을 첨부하면 현재 차단 정책 기준으로 검증한 뒤 저장합니다.</p>
+
+    <div class="upload-box">
+        <input type="file" id="file-input">
+        <button type="button" id="upload-btn">업로드</button>
+    </div>
+    <div id="result"></div>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const uploadBtn = document.getElementById('upload-btn');
+        const resultEl = document.getElementById('result');
+
+        async function parseErrorMessage(response) {
+            try {
+                const body = await response.json();
+                return body.message || '업로드에 실패했습니다';
+            } catch (e) {
+                return '업로드에 실패했습니다';
+            }
+        }
+
+        uploadBtn.addEventListener('click', async () => {
+            resultEl.textContent = '';
+            resultEl.className = '';
+
+            const file = fileInput.files[0];
+            if (!file) {
+                resultEl.textContent = '업로드할 파일을 선택해주세요';
+                resultEl.className = 'error';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            uploadBtn.disabled = true;
+            try {
+                const response = await fetch('/api/files/upload', { method: 'POST', body: formData });
+                if (!response.ok) {
+                    resultEl.textContent = await parseErrorMessage(response);
+                    resultEl.className = 'error';
+                    return;
+                }
+                const body = await response.json();
+                resultEl.textContent = '업로드 성공: ' + body.storedFilename;
+                resultEl.className = 'success';
+                fileInput.value = '';
+            } catch (e) {
+                resultEl.textContent = '업로드 중 오류가 발생했습니다';
+                resultEl.className = 'error';
+            } finally {
+                uploadBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

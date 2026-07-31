@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>확장자 차단 정책 관리</title>
+    <style>
+        body {
+            font-family: -apple-system, "Segoe UI", Malgun Gothic, sans-serif;
+            max-width: 640px;
+            margin: 40px auto;
+            padding: 0 20px;
+            color: #1f2328;
+        }
+        h1 {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        .subtitle {
+            color: #6b7280;
+            font-size: 13px;
+            margin-bottom: 32px;
+        }
+        section {
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        section h2 {
+            font-size: 15px;
+            margin: 0 0 4px;
+        }
+        section p.desc {
+            color: #6b7280;
+            font-size: 12px;
+            margin: 0 0 16px;
+        }
+        #fixed-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 24px;
+        }
+        .fixed-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+        }
+        .fixed-item input {
+            width: 16px;
+            height: 16px;
+        }
+        .custom-form {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .custom-form input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .custom-form button {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 6px;
+            background: #1f6feb;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .custom-form button:hover {
+            background: #1a5cd1;
+        }
+        .error-message {
+            color: #d1242f;
+            font-size: 12px;
+            min-height: 16px;
+            margin-bottom: 12px;
+        }
+        #custom-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .custom-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 16px;
+            padding: 4px 8px 4px 12px;
+            font-size: 13px;
+        }
+        .custom-chip button {
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 2px 4px;
+        }
+        .custom-chip button:hover {
+            color: #d1242f;
+        }
+        .empty {
+            color: #9ca3af;
+            font-size: 13px;
+        }
+        .count {
+            color: #6b7280;
+            font-size: 12px;
+            margin-left: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>확장자 차단 정책 관리</h1>
+    <p class="subtitle">관리자 전용 화면입니다. 체크/추가/삭제는 즉시 저장되며, 별도의 저장 버튼은 없습니다.</p>
+
+    <section>
+        <h2>고정 확장자</h2>
+        <p class="desc">자주 차단되는 위험 확장자 7종입니다. 체크하면 즉시 차단 정책에 반영됩니다.</p>
+        <div id="fixed-list"></div>
+    </section>
+
+    <section>
+        <h2>커스텀 확장자<span class="count" id="custom-count"></span></h2>
+        <p class="desc">직접 추가하는 차단 확장자입니다. 영문/숫자만 입력 가능하며 최대 20자, 최대 200개까지 등록할 수 있습니다.</p>
+        <div class="custom-form">
+            <input type="text" id="custom-input" maxlength="20" placeholder="예: sh" autocomplete="off">
+            <button type="button" id="custom-add-btn">추가</button>
+        </div>
+        <div class="error-message" id="custom-error"></div>
+        <div id="custom-list"></div>
+    </section>
+
+    <script>
+        const fixedListEl = document.getElementById('fixed-list');
+        const customListEl = document.getElementById('custom-list');
+        const customInputEl = document.getElementById('custom-input');
+        const customAddBtnEl = document.getElementById('custom-add-btn');
+        const customErrorEl = document.getElementById('custom-error');
+        const customCountEl = document.getElementById('custom-count');
+
+        async function parseErrorMessage(response) {
+            try {
+                const body = await response.json();
+                return body.message || '요청을 처리할 수 없습니다';
+            } catch (e) {
+                return '요청을 처리할 수 없습니다';
+            }
+        }
+
+        async function loadFixedExtensions() {
+            const response = await fetch('/api/extensions/fixed');
+            const items = await response.json();
+            fixedListEl.innerHTML = '';
+            items.forEach((item) => {
+                const label = document.createElement('label');
+                label.className = 'fixed-item';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = item.is_blocked;
+                checkbox.addEventListener('change', () => toggleFixed(item.extension, checkbox));
+
+                const span = document.createElement('span');
+                span.textContent = '.' + item.extension;
+
+                label.appendChild(checkbox);
+                label.appendChild(span);
+                fixedListEl.appendChild(label);
+            });
+        }
+
+        async function toggleFixed(extension, checkbox) {
+            const desired = checkbox.checked;
+            checkbox.disabled = true;
+            try {
+                const response = await fetch('/api/extensions/fixed/' + encodeURIComponent(extension), {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_blocked: desired }),
+                });
+                if (!response.ok) {
+                    checkbox.checked = !desired;
+                }
+            } catch (e) {
+                checkbox.checked = !desired;
+            } finally {
+                checkbox.disabled = false;
+            }
+        }
+
+        async function loadCustomExtensions() {
+            const response = await fetch('/api/extensions/custom');
+            const items = await response.json();
+            renderCustomExtensions(items);
+        }
+
+        function renderCustomExtensions(items) {
+            customListEl.innerHTML = '';
+            customCountEl.textContent = '(' + items.length + '/200)';
+
+            if (items.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'empty';
+                empty.textContent = '등록된 커스텀 확장자가 없습니다';
+                customListEl.appendChild(empty);
+                return;
+            }
+
+            items.forEach((item) => {
+                const chip = document.createElement('span');
+                chip.className = 'custom-chip';
+
+                const text = document.createElement('span');
+                text.textContent = '.' + item.extension;
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.textContent = '×';
+                removeBtn.addEventListener('click', () => deleteCustom(item.id));
+
+                chip.appendChild(text);
+                chip.appendChild(removeBtn);
+                customListEl.appendChild(chip);
+            });
+        }
+
+        async function addCustomExtension() {
+            const value = customInputEl.value;
+            customErrorEl.textContent = '';
+
+            const response = await fetch('/api/extensions/custom', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ extension: value }),
+            });
+
+            if (!response.ok) {
+                customErrorEl.textContent = await parseErrorMessage(response);
+                return;
+            }
+
+            customInputEl.value = '';
+            await loadCustomExtensions();
+        }
+
+        async function deleteCustom(id) {
+            const response = await fetch('/api/extensions/custom/' + id, { method: 'DELETE' });
+            if (response.ok || response.status === 404) {
+                await loadCustomExtensions();
+            }
+        }
+
+        customAddBtnEl.addEventListener('click', addCustomExtension);
+        customInputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addCustomExtension();
+            }
+        });
+
+        loadFixedExtensions();
+        loadCustomExtensions();
+    </script>
+</body>
+</html>
