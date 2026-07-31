@@ -1,0 +1,11 @@
+target/
+uploads-data/
+.git/
+.idea/
+.claude/
+.vscode/
+*.iml
+HELP.md
+PRD.md
+PROMPTS.md
+README.md

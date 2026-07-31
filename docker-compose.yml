@@ -1,0 +1,13 @@
+services:
+  file-upload:
+    build: .
+    image: file-upload:latest
+    container_name: file-upload
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads-data:/app/uploads-data
+    restart: unless-stopped
+
+volumes:
+  uploads-data:
