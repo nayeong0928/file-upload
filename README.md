@@ -2,6 +2,16 @@
 
 `PRD.md` 기반 구현. 확장자 차단 정책 관리 화면, 파일 업로드 화면과 검증 로직, API, Docker/Render 배포까지 포함되어 있습니다.
 
+## AI 활용 기록
+
+- [프롬프트](./PROMPTS.md)
+- 스킬
+  - claude : AI 개발 도구
+  - Spring Boot 4.1.0 (Java 21, Maven) : 백엔드 구현
+  - H2 : DB
+  - Thymeleaf : 프론트엔드 구현
+  - Docker, git MCP, Render (무료 티어) : 배포 및 버전 관리
+
 ## 배포 URL
 
 **https://file-upload-rgxf.onrender.com**
@@ -32,14 +42,14 @@ Render 무료 티어로 배포되어 있어 15분간 요청이 없으면 슬립 
 
 ### API
 
-| Method | Endpoint | 설명 |
-|---|---|---|
-| GET | `/api/extensions/fixed` | 고정 확장자 목록 + 체크 상태 조회 |
-| PATCH | `/api/extensions/fixed/{extension}` | 고정 확장자 체크/해제 |
-| GET | `/api/extensions/custom` | 커스텀 확장자 목록 조회 |
-| POST | `/api/extensions/custom` | 커스텀 확장자 추가 |
-| DELETE | `/api/extensions/custom/{id}` | 커스텀 확장자 삭제 |
-| POST | `/api/files/upload` | 파일 업로드 (multipart/form-data) |
+| Method | Endpoint                            | 설명                              |
+| ------ | ----------------------------------- | --------------------------------- |
+| GET    | `/api/extensions/fixed`             | 고정 확장자 목록 + 체크 상태 조회 |
+| PATCH  | `/api/extensions/fixed/{extension}` | 고정 확장자 체크/해제             |
+| GET    | `/api/extensions/custom`            | 커스텀 확장자 목록 조회           |
+| POST   | `/api/extensions/custom`            | 커스텀 확장자 추가                |
+| DELETE | `/api/extensions/custom/{id}`       | 커스텀 확장자 삭제                |
+| POST   | `/api/files/upload`                 | 파일 업로드 (multipart/form-data) |
 
 ## 로컬 실행 방법
 
@@ -106,14 +116,3 @@ docker compose up -d --build
 2. **New +** → **Web Service** → 이 저장소 선택
 3. Runtime은 저장소의 `Dockerfile`을 자동 감지 (Docker) / Instance Type은 **Free** 선택
 4. **Create Web Service** 클릭 → 빌드 완료 후 할당된 `*.onrender.com` 주소로 접속
-
-## 구현 범위
-
-- [x] 기술 스택 확정 (Spring Boot + H2 + Thymeleaf)
-- [x] `blocked_extension`, `upload_file` 테이블 + FIXED 7종 seed data
-- [x] 확장자 차단 정책 관리 화면 + API (`/admin/extensions`, `/api/extensions/*`)
-- [x] 파일 업로드 화면 + 6단계 검증 파이프라인 + API (`/upload`, `/api/files/upload`)
-- [x] 화면 간 내비게이션 (루트 리다이렉트, 상호 이동 링크)
-- [x] Docker 배포 지원 (`Dockerfile`, `docker-compose.yml`)
-- [x] Render 무료 호스팅 배포
-- [ ] 관리자 인증/인가 (Out of Scope, `PRD.md` 9장 참고)
